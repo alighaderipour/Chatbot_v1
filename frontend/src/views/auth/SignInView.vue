@@ -1,55 +1,23 @@
 <template>
-  <div class="signin">
-    <div class="signin__backdrop" aria-hidden="true">
-      <span class="orb orb--one"></span>
-      <span class="orb orb--two"></span>
-      <span class="orb orb--three"></span>
-      <div class="grid-overlay"></div>
+  <div class="signin" dir="rtl" lang="fa">
+    <div class="signin__header">
+      <img :src="logo" alt="Company logo" class="signin__logo" />
+      <h1 class="signin__title">هوش مصنوعی بیمارستان حضرت فاطمه (س) کرمان</h1>
     </div>
 
     <form class="signin__card" @submit.prevent="handleLogin">
-      <div class="signin__brand">
-        <span class="mark">◆</span>
-        <span>Internal Assistant</span>
-      </div>
-
-      <h1>Welcome back</h1>
-      <p class="subtitle">Sign in with your company account to continue.</p>
+      <h2>ورود</h2>
+      <p class="subtitle">برای ورود نام کاربری و رمز عبور خود را وارد کنید</p>
 
       <label class="field">
-        <span class="field__label">Username</span>
-        <div class="field__control">
-          <svg class="field__icon" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5Z"
-              fill="currentColor"
-            />
-          </svg>
-          <input
-            v-model="username"
-            type="text"
-            autocomplete="username"
-            placeholder="jane.doe"
-            autofocus
-          />
-        </div>
+        <span class="field__label">نام کاربری</span>
+        <input v-model="username" type="text" autocomplete="username" autofocus />
       </label>
 
       <label class="field">
-        <span class="field__label">Password</span>
+        <span class="field__label">رمز عبور</span>
         <div class="field__control">
-          <svg class="field__icon" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 1 0-8 0v2Z"
-              fill="currentColor"
-            />
-          </svg>
-          <input
-            v-model="password"
-            :type="showPassword ? 'text' : 'password'"
-            autocomplete="current-password"
-            placeholder="••••••••"
-          />
+          <input v-model="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" />
           <button
             type="button"
             class="field__toggle"
@@ -79,14 +47,12 @@
       </label>
 
       <button type="submit" class="submit" :disabled="loading">
-        <span v-if="!loading">Sign in</span>
-        <span v-else class="spinner" aria-hidden="true"></span>
+        {{ loading ? 'در حال ورود…' : 'ورود' }}
       </button>
-
       <p v-if="error" class="error">{{ error }}</p>
-
-      <p class="footnote">Secure access for verified employees only.</p>
     </form>
+
+    <p class="footnote">دسترسی امن، مخصوص کارکنان تأییدشده</p>
   </div>
 </template>
 
@@ -94,6 +60,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import logo from '@/assets/images/bhf_logo.jpg'
 
 const username = ref('')
 const password = ref('')
@@ -110,7 +77,7 @@ async function handleLogin() {
     await auth.login(username.value, password.value)
     router.push({ name: 'chat' })
   } catch (e) {
-    error.value = 'Invalid username or password'
+    error.value = 'نام کاربری یا رمز عبور اشتباه است'
   } finally {
     loading.value = false
   }
@@ -119,174 +86,101 @@ async function handleLogin() {
 
 <style scoped>
 .signin {
-  position: relative;
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  gap: 32px;
+  padding: 48px 24px;
   background: var(--color-sidebar-bg);
-  padding: 24px;
 }
 
-/* ---- animated backdrop ---- */
-.signin__backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+.signin__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.55;
-  animation: drift 16s ease-in-out infinite;
+.signin__logo {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
-.orb--one {
-  width: 420px;
-  height: 420px;
-  background: var(--color-accent);
-  top: -120px;
-  left: -100px;
-  animation-duration: 18s;
+.signin__title {
+  margin: 0;
+  color: var(--color-text-inverse);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-align: center;
 }
 
-.orb--two {
-  width: 360px;
-  height: 360px;
-  background: #6366f1;
-  bottom: -140px;
-  right: -80px;
-  animation-duration: 22s;
-  animation-delay: -6s;
-}
-
-.orb--three {
-  width: 260px;
-  height: 260px;
-  background: #0d9488;
-  top: 40%;
-  right: 15%;
-  animation-duration: 20s;
-  animation-delay: -3s;
-}
-
-@keyframes drift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.06); }
-  66% { transform: translate(-20px, 25px) scale(0.96); }
-}
-
-.grid-overlay {
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(circle at center, black 0%, transparent 75%);
-}
-
-/* ---- glass card ---- */
 .signin__card {
-  position: relative;
-  z-index: 1;
   width: 100%;
-  max-width: 380px;
-  background: rgba(16, 24, 38, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 40px 34px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  max-width: 360px;
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
 
-.signin__brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-accent);
-  margin-bottom: 4px;
-}
-
-h1 {
+h2 {
   margin: 0;
-  font-size: 26px;
-  color: var(--color-text-inverse);
-  letter-spacing: -0.01em;
+  font-size: 20px;
+  color: var(--color-text-primary);
 }
 
 .subtitle {
-  margin: -6px 0 6px;
-  color: rgba(231, 235, 240, 0.6);
+  margin: -8px 0 4px;
+  color: var(--color-text-secondary);
   font-size: 13.5px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
 }
 
-.field__label {
-  font-size: 12px;
-  color: rgba(231, 235, 240, 0.65);
+.field input {
+  padding: 11px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.field input:focus {
+  border-color: var(--color-accent);
+  outline: none;
 }
 
 .field__control {
   position: relative;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.field__control:focus-within {
-  border-color: var(--color-accent);
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.field__icon {
-  width: 18px;
-  height: 18px;
-  margin-left: 13px;
-  color: rgba(231, 235, 240, 0.4);
-  flex-shrink: 0;
 }
 
 .field__control input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 12px 12px;
-  font-size: 14px;
-  color: var(--color-text-inverse);
-}
-
-.field__control input:focus {
-  outline: none;
-}
-
-.field__control input::placeholder {
-  color: rgba(231, 235, 240, 0.3);
+  width: 100%;
+  padding-inline-end: 40px;
 }
 
 .field__toggle {
+  position: absolute;
+  inset-inline-end: 8px;
   background: none;
   border: none;
-  padding: 8px 12px;
-  color: rgba(231, 235, 240, 0.45);
+  padding: 6px;
+  color: var(--color-text-secondary);
   display: flex;
 }
 
@@ -301,66 +195,34 @@ h1 {
 
 .submit {
   margin-top: 6px;
-  padding: 13px;
+  padding: 12px;
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
-  color: #06120f;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: #0b1520;
   font-weight: 700;
-  font-size: 14.5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 46px;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-  box-shadow: 0 8px 24px rgba(20, 184, 166, 0.25);
+  font-size: 14px;
 }
 
 .submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 28px rgba(20, 184, 166, 0.35);
-}
-
-.submit:active:not(:disabled) {
-  transform: translateY(0);
+  background: var(--color-accent-strong);
 }
 
 .submit:disabled {
-  opacity: 0.75;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.spinner {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid rgba(6, 18, 15, 0.35);
-  border-top-color: #06120f;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .error {
-  color: #f87171;
+  color: var(--color-danger);
   font-size: 12.5px;
   margin: 0;
 }
 
 .footnote {
-  margin: 8px 0 0;
-  text-align: center;
+  margin: 0;
+  color: rgba(231, 235, 240, 0.4);
   font-size: 11.5px;
-  color: rgba(231, 235, 240, 0.35);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .orb {
-    animation: none;
-  }
+  text-align: center;
 }
 </style>

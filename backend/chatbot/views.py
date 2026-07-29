@@ -67,9 +67,23 @@ class SendMessageView(APIView):
 
         def event_stream():
             full_reply = []
-            for chunk in stream_chat_completion(messages_payload):
-                full_reply.append(chunk)
-                yield chunk
+            try:
+                for chunk in stream_chat_completion(messages_payload):
+                    full_reply.append(chunk)
+                    yield chunk
+            except Exception:
+                # If llama-server failed partway through (or immediately),
+                # don't silently save an empty message — that used to cause
+                # confusing behavior where the model "caught up" on an
+                # unanswered question several turns later. Save (and show)
+                # a clear error instead, on top of whatever partial text,
+                # if any, already streamed to the client before the failure.
+                error_text = (
+                    "\n\n⚠️ Something went wrong generating a reply. Please try again."
+                )
+                full_reply.append(error_text)
+                yield error_text
+
             Message.objects.create(
                 conversation=conversation,
                 role=Message.Role.ASSISTANT,

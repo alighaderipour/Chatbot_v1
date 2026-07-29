@@ -1,7 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
 
-:root {
-  /* Palette */
+/*
+  Tailwind v4 reads this @theme block and auto-generates matching utility
+  classes from each variable — no tailwind.config.js needed for this.
+  e.g. --color-accent below gives you bg-accent, text-accent, border-accent, etc.
+  --font-ui gives you font-ui, and so on.
+*/
+@theme {
   --color-bg: #F5F7F8;
   --color-surface: #FFFFFF;
   --color-sidebar-bg: #101826;
@@ -16,7 +22,6 @@
   --color-border: #E4E7EB;
   --color-danger: #DC2626;
 
-  /* Type */
   --font-ui: 'Manrope', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 }
