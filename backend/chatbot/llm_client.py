@@ -42,6 +42,12 @@ def stream_chat_completion(messages, temperature=0.7, max_tokens=1024):
         timeout=600,
     ) as resp:
         resp.raise_for_status()
+        # requests guesses the response encoding from headers when llama-server
+        # doesn't send an explicit charset, and that guess often lands on
+        # ISO-8859-1 — which silently mangles any non-ASCII text (Persian,
+        # Arabic, emoji, etc.) into mojibake. Force UTF-8 explicitly instead
+        # of trusting the guess.
+        resp.encoding = "utf-8"
         for line in resp.iter_lines(decode_unicode=True):
             if not line or not line.startswith("data:"):
                 continue

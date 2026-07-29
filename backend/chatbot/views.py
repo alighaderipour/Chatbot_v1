@@ -27,8 +27,8 @@ class ConversationListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
-class ConversationDetailView(generics.RetrieveDestroyAPIView):
-    """GET: full conversation with message history. DELETE: remove it."""
+class ConversationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """GET: full conversation with message history. PATCH: rename (title only — id/timestamps/messages stay read-only). DELETE: remove it."""
 
     serializer_class = ConversationDetailSerializer
     permission_classes = [permissions.IsAuthenticated]

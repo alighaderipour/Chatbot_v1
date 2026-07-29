@@ -28,8 +28,7 @@ SECRET_KEY = 'django-insecure-c$1^ii3j2&qwbsv5zkl82^wg*i44%s-jtncc0&jdl-a$uo#7cu
 DEBUG = True
 
 
-ALLOWED_HOSTS = ["*"]
-
+ALLOWED_HOSTS = ["192.168.9.35", "localhost", "127.0.0.1"]
 # Application definition
 
 INSTALLED_APPS = [
@@ -72,6 +71,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://192.168.9.35:5173",
+    "http://192.168.9.35",  # built frontend served on port 80
+    "http://192.168.9.35:5173",  # Vite dev server, if you keep using it
+    "http://localhost:5173",
 ]
 
 TEMPLATES = [
