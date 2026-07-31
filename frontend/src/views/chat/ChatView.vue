@@ -62,7 +62,12 @@ function handleLogout() {
   router.push({ name: 'login' })
 }
 
-onMounted(() => store.loadConversations())
+onMounted(() => {
+  store.loadConversations()
+  if (!auth.me) {
+    auth.loadMe()
+  }
+})
 </script>
 
 <style scoped>

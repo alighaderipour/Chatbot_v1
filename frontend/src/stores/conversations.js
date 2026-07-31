@@ -77,6 +77,22 @@ export const useConversationsStore = defineStore('conversations', {
       try {
         const token = localStorage.getItem('access_token')
         const res = await sendMessageStream(this.activeId, text, token)
+
+        if (!res.ok) {
+          // e.g. 403 when the message limit is reached — this comes back as
+          // a small JSON body, not a stream, so read it accordingly instead
+          // of feeding raw error bytes into the reply text.
+          let detail = `Server returned ${res.status}`
+          try {
+            const errorBody = await res.json()
+            detail = errorBody.detail || detail
+          } catch (e) {
+            // body wasn't JSON — fall back to the generic message above
+          }
+          this.messages[assistantIndex].content = `⚠️ ${detail}`
+          return
+        }
+
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         // eslint-disable-next-line no-constant-condition
@@ -88,6 +104,11 @@ export const useConversationsStore = defineStore('conversations', {
           // rule as before, just centralized here now instead of in the view.
           this.messages[assistantIndex].content += decoder.decode(value, { stream: true })
         }
+      } catch (err) {
+        this.messages[assistantIndex].content =
+          '⚠️ Something went wrong while getting a reply. Please try again.'
+        // eslint-disable-next-line no-console
+        console.error('sendMessage failed:', err)
       } finally {
         this.sending = false
       }

@@ -3,6 +3,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import UserProfile
+
 from .llm_client import build_messages, stream_chat_completion
 from .models import Conversation, Message
 from .serializers import (
@@ -54,6 +56,13 @@ class SendMessageView(APIView):
         except Conversation.DoesNotExist:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        if profile.message_limit is not None and profile.message_count >= profile.message_limit:
+            return Response(
+                {"detail": "You've reached your message limit. Contact an admin to increase it."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         serializer = SendMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_content = serializer.validated_data["content"]
@@ -61,6 +70,8 @@ class SendMessageView(APIView):
         Message.objects.create(
             conversation=conversation, role=Message.Role.USER, content=user_content
         )
+        profile.messages_sent += 1
+        profile.save(update_fields=["messages_sent"])
 
         history = list(conversation.messages.all())
         messages_payload = build_messages(history, system_prompt=SYSTEM_PROMPT)
