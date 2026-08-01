@@ -38,6 +38,16 @@ export const useAuthStore = defineStore('auth', {
       this.me = data
     },
 
+    // Called right after the backend accepts a message (see stores/conversations.js).
+    // Updates the badge instantly instead of waiting for a page reload or an
+    // extra /me/ round-trip — the backend already incremented its own
+    // counter at this point, so this just mirrors that locally.
+    incrementMessageCount() {
+      if (this.me) {
+        this.me.message_count = (this.me.message_count ?? 0) + 1
+      }
+    },
+
     logout() {
       this.accessToken = null
       this.me = null

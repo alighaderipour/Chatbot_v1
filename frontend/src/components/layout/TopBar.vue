@@ -2,7 +2,7 @@
   <header class="topbar">
     <div class="topbar__brand">
       <span class="topbar__mark">◆</span>
-      <span class="topbar__title">Internal Assistant</span>
+      <span class="topbar__title">دستیار هوش مصنوعی بیمارستان حضرت فاطمه (س) </span>
     </div>
 
     <div class="topbar__status">
@@ -12,9 +12,11 @@
     </div>
 
     <div class="topbar__user" ref="menuRoot">
+      <span v-if="messageUsage" class="usage-badge">{{ messageUsage }}</span>
+
       <button class="topbar__trigger" @click="menuOpen = !menuOpen">
         <span class="avatar">{{ initial }}</span>
-        <span class="topbar__username">{{ username }}</span>
+        <span class="topbar__username">{{ displayName }}</span>
         <svg class="chevron" :class="{ 'chevron--open': menuOpen }" viewBox="0 0 24 24" fill="none">
           <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
         </svg>
@@ -23,7 +25,6 @@
       <div v-if="menuOpen" class="menu">
         <div class="menu__header">
           <span class="badge" :class="roleBadgeClass">{{ roleLabel }}</span>
-          <span v-if="messageUsage" class="menu__usage">{{ messageUsage }}</span>
         </div>
 
         <router-link v-if="auth.isStaff" to="/admin" class="menu__item" @click="menuOpen = false">
@@ -51,7 +52,16 @@ const auth = useAuthStore()
 const menuOpen = ref(false)
 const menuRoot = ref(null)
 
-const initial = computed(() => (props.username ? props.username[0].toUpperCase() : '?'))
+// "username name family" — falls back to just the username prop until
+// /me/ has loaded (e.g. the instant right after login, before loadMe()
+// resolves).
+const displayName = computed(() => {
+  const uname = auth.me?.username || props.username
+  const fullName = [auth.me?.first_name, auth.me?.last_name].filter(Boolean).join(' ')
+  return fullName ? `${uname} ${fullName}` : uname
+})
+
+const initial = computed(() => (displayName.value ? displayName.value[0].toUpperCase() : '?'))
 
 const roleLabel = computed(() => {
   if (auth.me?.is_superuser) return 'Admin'
@@ -160,7 +170,17 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   position: relative;
   min-width: 200px;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 10px;
+}
+
+.usage-badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-inverse);
+  opacity: 0.75;
+  white-space: nowrap;
 }
 
 .topbar__trigger {
@@ -226,12 +246,6 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   flex-direction: column;
   gap: 6px;
   border-bottom: 1px solid var(--color-border);
-}
-
-.menu__usage {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  font-family: var(--font-mono);
 }
 
 .menu__item {

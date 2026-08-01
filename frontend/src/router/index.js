@@ -4,6 +4,7 @@ import SignInView from '../views/auth/SignInView.vue'
 import AdminLayout from '../views/admin/AdminLayout.vue'
 import UsersPanel from '../views/admin/UsersPanel.vue'
 import ReportsView from '../views/admin/ReportsView.vue'
+import PreferencesView from '../views/admin/PreferencesView.vue'
 import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
@@ -24,6 +25,12 @@ const router = createRouter({
         { path: '', redirect: { name: 'admin-users' } },
         { path: 'users', name: 'admin-users', component: UsersPanel },
         { path: 'reports', name: 'admin-reports', component: ReportsView },
+        {
+          path: 'preferences',
+          name: 'admin-preferences',
+          component: PreferencesView,
+          meta: { requiresAuth: true, requiresAdmin: true, requiresSuperAdmin: true },
+        },
         // Add more sections here as they're built — matches the nav items
         // in AdminLayout.vue's right-side bar.
       ],
@@ -51,6 +58,9 @@ router.beforeEach(async (to) => {
     }
     if (!auth.isStaff) {
       return { name: 'chat' }
+    }
+    if (to.meta.requiresSuperAdmin && !auth.isAdmin) {
+      return { name: 'admin-users' }
     }
   }
 })

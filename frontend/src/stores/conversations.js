@@ -7,6 +7,7 @@ import {
   sendMessageStream,
   updateConversation,
 } from '../api/conversations'
+import { useAuthStore } from './auth'
 
 // crypto.randomUUID() only works in "secure contexts" (HTTPS, or the literal
 // hostname "localhost"). This app is served over plain HTTP from a LAN IP
@@ -92,6 +93,11 @@ export const useConversationsStore = defineStore('conversations', {
           this.messages[assistantIndex].content = `⚠️ ${detail}`
           return
         }
+
+        // Backend already incremented its own counter the moment it
+        // accepted this message — mirror that here so the badge in TopBar
+        // updates instantly instead of waiting for a reload or a refetch.
+        useAuthStore().incrementMessageCount()
 
         const reader = res.body.getReader()
         const decoder = new TextDecoder()

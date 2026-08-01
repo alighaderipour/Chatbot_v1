@@ -8,6 +8,9 @@
       </main>
 
       <nav class="admin-nav">
+        <router-link v-if="auth.isAdmin" to="/admin/preferences" class="admin-nav__item">
+          Preferences
+        </router-link>
         <router-link to="/admin/users" class="admin-nav__item">Users</router-link>
         <router-link to="/admin/reports" class="admin-nav__item">Reports</router-link>
         <!-- Add more sections here as they're built — gate any

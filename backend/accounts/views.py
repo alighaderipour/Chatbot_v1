@@ -5,9 +5,10 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import UserProfile
+from .models import AppSettings, UserProfile
 from .permissions import IsAdmin, IsStaffOrAdmin
 from .serializers import (
+    AppSettingsSerializer,
     MeSerializer,
     UserCreateSerializer,
     UserSerializer,
@@ -215,3 +216,16 @@ class UserBulkImportView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class AppSettingsView(generics.RetrieveUpdateAPIView):
+    """
+    Admin-only: GET/PATCH the org-wide settings (currently just
+    daily_reset_time). Powers the Preferences tab.
+    """
+
+    serializer_class = AppSettingsSerializer
+    permission_classes = [IsAdmin]
+
+    def get_object(self):
+        return AppSettings.load()

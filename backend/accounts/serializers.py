@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import UserProfile
+from .models import AppSettings, UserProfile
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -139,3 +139,10 @@ class MeSerializer(serializers.ModelSerializer):
     def get_message_count(self, obj):
         profile, _ = UserProfile.objects.get_or_create(user=obj)
         return profile.message_count
+
+
+class AppSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppSettings
+        fields = ["daily_reset_time", "last_reset_date"]
+        read_only_fields = ["last_reset_date"]
