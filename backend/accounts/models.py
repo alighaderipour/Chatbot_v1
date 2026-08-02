@@ -56,6 +56,29 @@ class UserProfile(models.Model):
     # case above.
     messages_sent = models.PositiveIntegerField(default=0)
 
+    # --- Phonebook fields ---
+    # national_id/personal_phone are this person's own info. Their WORK
+    # phone number is deliberately NOT stored here — it's looked up live via
+    # section.phones (see phonebook app), so moving someone between
+    # departments/sections is a two-field edit and their phone number
+    # updates automatically rather than needing to be re-entered.
+    national_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    personal_phone = models.CharField(max_length=20, blank=True, null=True)
+    department = models.ForeignKey(
+        "phonebook.Department",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+    )
+    section = models.ForeignKey(
+        "phonebook.Section",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+    )
+
     def __str__(self):
         return f"Profile({self.user.username})"
 

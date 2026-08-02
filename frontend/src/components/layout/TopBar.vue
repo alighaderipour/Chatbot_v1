@@ -1,9 +1,9 @@
 <template>
   <header class="topbar">
-    <div class="topbar__brand">
+    <router-link to="/entry" class="topbar__brand">
       <span class="topbar__mark">◆</span>
-      <span class="topbar__title">دستیار هوش مصنوعی بیمارستان حضرت فاطمه (س) </span>
-    </div>
+      <span class="topbar__title">Internal Assistant</span>
+    </router-link>
 
     <div class="topbar__status">
       <span class="status-dot" :class="{ 'status-dot--online': online }"></span>
@@ -110,6 +110,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   align-items: center;
   gap: 10px;
   min-width: 200px;
+  text-decoration: none;
 }
 
 .topbar__mark {

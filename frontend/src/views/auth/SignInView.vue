@@ -2,7 +2,7 @@
   <div class="signin" dir="rtl" lang="fa">
     <div class="signin__header">
       <img :src="logo" alt="Company logo" class="signin__logo" />
-      <h1 class="signin__title">هوش مصنوعی بیمارستان حضرت فاطمه (س) کرمان</h1>
+      <h1 class="signin__title">my testing chatbot</h1>
     </div>
 
     <form class="signin__card" @submit.prevent="handleLogin">
@@ -75,7 +75,7 @@ async function handleLogin() {
   loading.value = true
   try {
     await auth.login(username.value, password.value)
-    router.push({ name: 'chat' })
+    router.push({ name: 'entry' })
   } catch (e) {
     error.value = 'نام کاربری یا رمز عبور اشتباه است'
   } finally {

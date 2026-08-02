@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import AppSettings, UserProfile
+from .pagination import UserPagination
 from .permissions import IsAdmin, IsStaffOrAdmin
 from .serializers import (
     AppSettingsSerializer,
@@ -38,9 +39,10 @@ ADMIN_ONLY_FIELDS = {"is_staff", "is_superuser", "password"}
 
 
 class UserListCreateView(generics.ListCreateAPIView):
-    """GET: staff or admin can list all users. POST: admin-only, creates a new one."""
+    """GET: staff or admin can list all users (paginated). POST: admin-only, creates a new one."""
 
     queryset = User.objects.all().order_by("username")
+    pagination_class = UserPagination
 
     def get_permissions(self):
         if self.request.method == "POST":

@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from .models import AppSettings, UserProfile
+from phonebook.models import Department, Section
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,6 +13,10 @@ class UserSerializer(serializers.ModelSerializer):
 
     message_limit = serializers.SerializerMethodField()
     message_count = serializers.SerializerMethodField()
+    national_id = serializers.SerializerMethodField()
+    personal_phone = serializers.SerializerMethodField()
+    department = serializers.SerializerMethodField()
+    section = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -26,21 +31,49 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "message_limit",
             "message_count",
+            "national_id",
+            "personal_phone",
+            "department",
+            "section",
         ]
         read_only_fields = ["id", "username", "date_joined", "message_count"]
 
-    def get_message_limit(self, obj):
+    def _profile(self, obj):
         profile, _ = UserProfile.objects.get_or_create(user=obj)
-        return profile.message_limit
+        return profile
+
+    def get_message_limit(self, obj):
+        return self._profile(obj).message_limit
 
     def get_message_count(self, obj):
-        profile, _ = UserProfile.objects.get_or_create(user=obj)
-        return profile.message_count
+        return self._profile(obj).message_count
+
+    def get_national_id(self, obj):
+        return self._profile(obj).national_id
+
+    def get_personal_phone(self, obj):
+        return self._profile(obj).personal_phone
+
+    def get_department(self, obj):
+        dept = self._profile(obj).department
+        return {"id": dept.id, "name": dept.name} if dept else None
+
+    def get_section(self, obj):
+        section = self._profile(obj).section
+        return {"id": section.id, "name": section.name} if section else None
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=1)
     message_limit = serializers.IntegerField(required=False, allow_null=True, default=None)
+    national_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, default=None)
+    personal_phone = serializers.CharField(required=False, allow_null=True, allow_blank=True, default=None)
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), required=False, allow_null=True, default=None
+    )
+    section = serializers.PrimaryKeyRelatedField(
+        queryset=Section.objects.all(), required=False, allow_null=True, default=None
+    )
 
     class Meta:
         model = User
@@ -53,16 +86,26 @@ class UserCreateSerializer(serializers.ModelSerializer):
             "is_staff",
             "is_superuser",
             "message_limit",
+            "national_id",
+            "personal_phone",
+            "department",
+            "section",
         ]
         read_only_fields = ["id"]
 
     def create(self, validated_data):
-        message_limit = validated_data.pop("message_limit", None)
+        profile_fields = {
+            "message_limit": validated_data.pop("message_limit", None),
+            "national_id": validated_data.pop("national_id", None) or None,
+            "personal_phone": validated_data.pop("personal_phone", None) or None,
+            "department": validated_data.pop("department", None),
+            "section": validated_data.pop("section", None),
+        }
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
         user.save()
-        UserProfile.objects.create(user=user, message_limit=message_limit)
+        UserProfile.objects.create(user=user, **profile_fields)
         return user
 
 
@@ -73,6 +116,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
     message_limit = serializers.IntegerField(required=False, allow_null=True)
     password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    national_id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    personal_phone = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), required=False, allow_null=True
+    )
+    section = serializers.PrimaryKeyRelatedField(
+        queryset=Section.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = User
@@ -84,10 +135,18 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             "is_superuser",
             "message_limit",
             "password",
+            "national_id",
+            "personal_phone",
+            "department",
+            "section",
         ]
 
     def update(self, instance, validated_data):
-        message_limit = validated_data.pop("message_limit", serializers.empty)
+        profile_updates = {}
+        for field in ("message_limit", "national_id", "personal_phone", "department", "section"):
+            if field in validated_data:
+                profile_updates[field] = validated_data.pop(field)
+
         password = validated_data.pop("password", None)
 
         # Blank name fields mean "leave unchanged" — the frontend
@@ -104,10 +163,15 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             instance.set_password(password)
             instance.save(update_fields=["password"])
 
-        if message_limit is not serializers.empty:
+        if profile_updates:
             profile, _ = UserProfile.objects.get_or_create(user=instance)
-            profile.message_limit = message_limit
-            profile.save(update_fields=["message_limit"])
+            for field, value in profile_updates.items():
+                # Blank string (not None) for national_id/personal_phone
+                # also means "leave unchanged", same reasoning as names above.
+                if field in ("national_id", "personal_phone") and value == "":
+                    continue
+                setattr(profile, field, value)
+            profile.save()
 
         return instance
 

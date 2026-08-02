@@ -5,7 +5,7 @@
         <h1>User management</h1>
         <p class="subtitle">Create accounts, set message limits, and manage access.</p>
       </div>
-      <router-link to="/" class="back-link">← Back to chat</router-link>
+      <router-link to="/entry" class="back-link">← Back to apps</router-link>
     </header>
 
     <section v-if="auth.isAdmin" class="panel">
@@ -21,6 +21,16 @@
           min="0"
           placeholder="Message limit (blank = unlimited)"
         />
+        <input v-model="newUser.national_id" placeholder="National ID" />
+        <input v-model="newUser.personal_phone" placeholder="Personal phone" />
+        <select v-model="newUser.department">
+          <option :value="null">No department</option>
+          <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
+        </select>
+        <select v-model="newUser.section" :disabled="!newUser.department">
+          <option :value="null">No section</option>
+          <option v-for="s in newUserSections" :key="s.id" :value="s.id">{{ s.name }}</option>
+        </select>
         <select v-model="newUser.role">
           <option value="user">User</option>
           <option value="staff">Staff</option>
@@ -96,7 +106,7 @@
     </p>
 
     <section class="panel">
-      <h2>All users ({{ store.users.length }})</h2>
+      <h2>All users ({{ store.count }})</h2>
       <table class="users-table">
         <thead>
           <tr>
@@ -104,6 +114,7 @@
             <th>Name</th>
             <th>Status</th>
             <th>Role</th>
+            <th>Department / Section</th>
             <th>Message limit</th>
             <th>Sent</th>
             <th></th>
@@ -145,6 +156,16 @@
                 </select>
                 <span v-else class="badge" :class="roleBadgeClass(u)">{{ roleLabel(u) }}</span>
               </td>
+              <td class="stacked-inputs">
+                <select v-model="editForm.department">
+                  <option :value="null">No department</option>
+                  <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
+                </select>
+                <select v-model="editForm.section" :disabled="!editForm.department">
+                  <option :value="null">No section</option>
+                  <option v-for="s in editSections" :key="s.id" :value="s.id">{{ s.name }}</option>
+                </select>
+              </td>
               <td>
                 <input
                   v-model.number="editForm.message_limit"
@@ -170,6 +191,7 @@
               <td>
                 <span class="badge" :class="roleBadgeClass(u)">{{ roleLabel(u) }}</span>
               </td>
+              <td>{{ [u.department?.name, u.section?.name].filter(Boolean).join(' / ') || '—' }}</td>
               <td>{{ u.message_limit ?? 'Unlimited' }}</td>
               <td>{{ u.message_count }}</td>
               <td class="actions">
@@ -185,17 +207,41 @@
           </tr>
         </tbody>
       </table>
+
+      <div class="pagination">
+        <button :disabled="store.page <= 1 || store.loading" @click="store.previousPage()">
+          ← Prev
+        </button>
+        <span class="pagination__label">Page {{ store.page }} of {{ store.totalPages }}</span>
+        <button
+          :disabled="store.page >= store.totalPages || store.loading"
+          @click="store.nextPage()"
+        >
+          Next →
+        </button>
+      </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useUsersStore } from '../../stores/users'
+import { fetchDepartments, fetchSections } from '../../api/phonebook'
 
 const auth = useAuthStore()
 const store = useUsersStore()
+
+const departments = ref([])
+const newUserSections = ref([])
+const editSections = ref([])
+
+onMounted(async () => {
+  store.loadUsers()
+  const { data } = await fetchDepartments()
+  departments.value = data
+})
 
 function roleLabel(u) {
   if (u.is_superuser) return 'Admin'
@@ -230,11 +276,23 @@ const emptyNewUser = () => ({
   password: '',
   message_limit: null,
   role: 'user',
+  national_id: '',
+  personal_phone: '',
+  department: null,
+  section: null,
 })
 
 const newUser = reactive(emptyNewUser())
 const creating = ref(false)
 const createError = ref('')
+
+watch(
+  () => newUser.department,
+  async (deptId) => {
+    newUser.section = null
+    newUserSections.value = deptId ? (await fetchSections(deptId)).data : []
+  }
+)
 
 async function handleCreate() {
   createError.value = ''
@@ -264,10 +322,23 @@ const editForm = reactive({
   role: 'user',
   message_limit: null,
   password: '',
+  national_id: '',
+  personal_phone: '',
+  department: null,
+  section: null,
 })
 
-function startEdit(user) {
+watch(
+  () => editForm.department,
+  async (deptId) => {
+    editSections.value = deptId ? (await fetchSections(deptId)).data : []
+  }
+)
+
+async function startEdit(user) {
   editingId.value = user.id
+  const deptId = user.department?.id ?? null
+  editSections.value = deptId ? (await fetchSections(deptId)).data : []
   Object.assign(editForm, {
     first_name: '',
     last_name: '',
@@ -275,6 +346,10 @@ function startEdit(user) {
     role: user.is_superuser ? 'admin' : user.is_staff ? 'staff' : 'user',
     message_limit: user.message_limit,
     password: '',
+    national_id: '',
+    personal_phone: '',
+    department: deptId,
+    section: user.section?.id ?? null,
   })
 }
 
@@ -282,11 +357,15 @@ async function saveEdit(user) {
   const payload = {
     is_active: editForm.is_active,
     message_limit: editForm.message_limit,
+    department: editForm.department,
+    section: editForm.section,
   }
-  // Only include name fields if the admin actually typed something —
-  // leaving them blank means "don't change this".
+  // Only include name/national_id/personal_phone if the admin actually
+  // typed something — leaving them blank means "don't change this".
   if (editForm.first_name) payload.first_name = editForm.first_name
   if (editForm.last_name) payload.last_name = editForm.last_name
+  if (editForm.national_id) payload.national_id = editForm.national_id
+  if (editForm.personal_phone) payload.personal_phone = editForm.personal_phone
 
   if (auth.isAdmin) {
     Object.assign(payload, roleToFlags(editForm.role))
@@ -316,8 +395,6 @@ async function handleImport() {
     importing.value = false
   }
 }
-
-onMounted(() => store.loadUsers())
 </script>
 
 <style scoped>
@@ -546,6 +623,40 @@ onMounted(() => store.loadUsers())
   font-size: 12px;
   color: var(--color-text-secondary);
   font-style: italic;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.pagination button {
+  padding: 7px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination__label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
 }
 
 .badge {

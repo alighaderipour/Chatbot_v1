@@ -1,7 +1,7 @@
 import client from './client'
 
-export function fetchUsers() {
-  return client.get('/users/')
+export function fetchUsers(page = 1) {
+  return client.get('/users/', { params: { page } })
 }
 
 export function createUser(payload) {

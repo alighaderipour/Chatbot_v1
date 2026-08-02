@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import EntryView from '../views/entry/EntryView.vue'
 import ChatView from '../views/chat/ChatView.vue'
+import MriRequestView from '../views/mri/MriRequestView.vue'
+import PhonebookView from '../views/phonebook/PhonebookView.vue'
 import SignInView from '../views/auth/SignInView.vue'
 import AdminLayout from '../views/admin/AdminLayout.vue'
 import UsersPanel from '../views/admin/UsersPanel.vue'
@@ -12,11 +15,39 @@ const router = createRouter({
   routes: [
     { path: '/login', name: 'login', component: SignInView },
     {
+      // The entry hub is the new "home" after login — each feature below
+      // (chatbot, mrirequest, and whatever gets added later) is its own
+      // top-level route so it can be linked to directly, not nested under
+      // entry. '/' just redirects here for convenience.
       path: '/',
-      name: 'chat',
+      redirect: { name: 'entry' },
+    },
+    {
+      path: '/entry',
+      name: 'entry',
+      component: EntryView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/chatbot',
+      name: 'chatbot',
       component: ChatView,
       meta: { requiresAuth: true },
     },
+    {
+      path: '/mrirequest',
+      name: 'mrirequest',
+      component: MriRequestView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/phonebook',
+      name: 'phonebook',
+      component: PhonebookView,
+      meta: { requiresAuth: true },
+    },
+    // Add new apps here as they're built (e.g. /phonebook), and add a
+    // matching card in views/entry/EntryView.vue's `apps` list.
     {
       path: '/admin',
       component: AdminLayout,
@@ -57,7 +88,7 @@ router.beforeEach(async (to) => {
       }
     }
     if (!auth.isStaff) {
-      return { name: 'chat' }
+      return { name: 'entry' }
     }
     if (to.meta.requiresSuperAdmin && !auth.isAdmin) {
       return { name: 'admin-users' }
